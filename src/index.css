@@ -1,0 +1,31 @@
+:root { --bg:#f2f4f7; --ink:#14201a; --muted:#5d6b64; --line:#d5dce3; --pitch:#1b5e3b; --err:#b3392f; --card:#fff; color-scheme: light dark; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#0f1613; --ink:#e8efe9; --muted:#93a39a; --line:#26342d; --pitch:#4fb37c; --err:#ef7d72; --card:#16211b; }
+}
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui, sans-serif; }
+main { max-width:760px; margin:0 auto; padding:24px 16px 64px; }
+header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:24px; }
+section { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; }
+nav { display:flex; gap:4px; }
+button { font:inherit; cursor:pointer; border:1px solid var(--pitch); background:var(--pitch); color:#fff; padding:6px 14px; border-radius:6px; }
+nav button { background:transparent; color:var(--ink); border-color:var(--line); }
+nav button[aria-pressed="true"] { background:var(--pitch); color:#fff; border-color:var(--pitch); }
+button:disabled { opacity:.6; cursor:wait; }
+:focus-visible { outline:2px solid var(--pitch); outline-offset:2px; }
+.form { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; align-items:start; }
+.form button { align-self:end; }
+label { display:grid; gap:4px; font-size:.9rem; }
+input { font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); }
+input[aria-invalid="true"] { border-color:var(--err); }
+.error { color:var(--err); font-size:.9rem; margin:8px 0 0; }
+.muted { color:var(--muted); margin:0; }
+table { width:100%; border-collapse:collapse; }
+th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); }
+.board { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+.board li { display:grid; grid-template-columns:minmax(90px,1.2fr) 2fr auto; gap:12px; align-items:center; }
+.num { font-variant-numeric:tabular-nums; color:var(--muted); font-size:.9rem; }
+/* The marker at 50% works like a halfway line. */
+.bar { position:relative; height:12px; background:var(--line); border-radius:3px; }
+.bar i { display:block; height:100%; background:var(--pitch); border-radius:3px; }
+.bar::after { content:""; position:absolute; left:50%; top:-3px; bottom:-3px; width:2px; background:var(--ink); opacity:.55; }

@@ -8,12 +8,12 @@
 
 .strip-scroll {
   flex: 1;
-  min-width: 0;                 /* lets the flex child shrink so it scrolls instead of growing */
+  min-width: 0;                
   display: flex;
   gap: .5rem;
   overflow-x: auto;
   scroll-snap-type: x proximity;
-  scrollbar-width: none;        /* hide scrollbar (Firefox) */
+  scrollbar-width: none;        
   padding: .25rem 0;
 }
 .strip-scroll::-webkit-scrollbar { display: none; }

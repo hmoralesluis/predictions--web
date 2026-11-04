@@ -1,27 +1,73 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { request } from "./client";
-import type { Match, NewMatch, Snapshot } from "./types";
+import type {
+  DayStats, Match, MatchStats, NewMatch, NewPrediction, PlayedDates, PredictorStats, SetResultBody, 
+} from "./types";
 
-interface SnapshotFilter { matchId?: string; date?: string }
+export const useMatches = () =>
+  useQuery({ queryKey: ["matches"], queryFn: () => request<Match[]>("/matches") });
 
-export function useSnapshot(filter: SnapshotFilter = {}) {
-  return useQuery({
-    queryKey: ["snapshot", filter],
-    queryFn: () => {
-      const qs = new URLSearchParams();
-      if (filter.matchId) qs.set("matchId", filter.matchId);
-      if (filter.date) qs.set("date", filter.date);
-      const query = qs.toString();
-      return request<Snapshot>(`/snapshot${query ? `?${query}` : ""}`);
-    },
+export const useMatchStats = (id: string) =>
+  useQuery({
+    queryKey: ["stats", "matches", id],
+    queryFn: () => request<MatchStats>(`/stats/matches/${id}`),
+    enabled: !!id, // don't fetch until a match is selected
   });
+
+export const useDayStats = (date: string) =>
+  useQuery({
+    queryKey: ["stats", "days", date],
+    queryFn: () => request<DayStats>(`/stats/days/${date}`),
+    enabled: !!date,
+  });
+
+export const usePredictorStats = () =>
+  useQuery({
+    queryKey: ["stats", "predictors"],
+    queryFn: () => request<PredictorStats>("/stats/predictors"),
+  });
+
+// Anything that changes matches or results must refresh both families of queries.
+function useInvalidateAll() {
+  const qc = useQueryClient();
+  return () =>
+    Promise.all([
+      qc.invalidateQueries({ queryKey: ["matches"] }),
+      qc.invalidateQueries({ queryKey: ["stats"] }), // prefix match: all stats queries
+    ]);
 }
 
 export function useCreateMatch() {
-  const qc = useQueryClient();
+  const invalidate = useInvalidateAll();
   return useMutation({
     mutationFn: (m: NewMatch) =>
       request<Match>("/matches", { method: "POST", body: JSON.stringify(m) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["snapshot"] }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useAddPrediction(matchId: string) {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: (p: NewPrediction) =>
+      request<unknown>(`/matches/${matchId}/predictions`, { method: "POST", body: JSON.stringify(p) }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSetResult(matchId: string) {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: (b: SetResultBody) =>
+      request<unknown>(`/matches/${matchId}/result`, { method: "PUT", body: JSON.stringify(b) }),
+    onSuccess: invalidate,
+  });
+}
+
+
+export function useMatchDates() {
+  return useQuery({
+    queryKey: ["matches", "dates"],
+    queryFn: () => request<string[]>("/matches/dates"),    
   });
 }

@@ -1,12 +1,16 @@
 import { useState, type FormEvent } from "react";
 import { ApiError } from "../api/client";
-import { useCreateMatch, useSnapshot } from "../api/hooks";
+import { useCreateMatch, useMatches } from "../api/hooks";
+
+import { MatchesByDate } from "../components/MatchesByDate";
 
 type Field = "home" | "away" | "date";
 const empty = { home: "", away: "", date: "" };
 
 export default function MatchesPage() {
-  const { data, isLoading, error } = useSnapshot();
+  console.log('init');
+  const { data: matches = [], isLoading, error } = useMatches();
+  const sorted = [...matches].sort((a, b) => b.date.localeCompare(a.date));
   const create = useCreateMatch();
   const [form, setForm] = useState(empty);
 
@@ -37,7 +41,7 @@ export default function MatchesPage() {
     );
   }
 
-  const matches = [...(data?.matches ?? [])].sort((a, b) => b.date.localeCompare(a.date));
+  // const matches = [...(data?.matches ?? [])].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <>
@@ -56,12 +60,12 @@ export default function MatchesPage() {
         <h2>Matches</h2>
         {isLoading && <p className="muted">Loading matches…</p>}
         {error && <p className="error">Could not load matches. Is the API running?</p>}
-        {data && matches.length === 0 && <p className="muted">No matches yet.</p>}
+        {matches.length === 0 && <p className="muted">No matches yet.</p>}
         {matches.length > 0 && (
           <table>
             <thead><tr><th>Date</th><th>Match</th><th>Result</th></tr></thead>
             <tbody>
-              {matches.map((m) => (
+              {sorted.map((m) => (
                 <tr key={m.id}>
                   <td>{m.date}</td>
                   <td>{m.home} – {m.away}</td>
@@ -72,6 +76,10 @@ export default function MatchesPage() {
           </table>
         )}
       </section>
-    </>
+      <section>
+        <h2>Matches</h2>
+        <MatchesByDate />
+      </section>
+      </>
   );
 }

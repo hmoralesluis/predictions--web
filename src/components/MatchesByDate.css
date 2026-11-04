@@ -1,0 +1,79 @@
+.date-strip {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.strip-scroll {
+  flex: 1;
+  min-width: 0;                 /* lets the flex child shrink so it scrolls instead of growing */
+  display: flex;
+  gap: .5rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;        /* hide scrollbar (Firefox) */
+  padding: .25rem 0;
+}
+.strip-scroll::-webkit-scrollbar { display: none; }
+
+:root {
+  --box-bg: #ffffff;
+  --box-text: #111827;
+  --box-muted: #6b7280;
+  --box-border: #d1d5db;
+  --box-active-bg: #2563eb;
+  --box-active-text: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --box-bg: #1f2937;
+    --box-text: #f3f4f6;
+    --box-muted: #9ca3af;
+    --box-border: #374151;
+    --box-active-bg: #3b82f6;
+    --box-active-text: #ffffff;
+  }
+}
+
+.date-box {
+  flex: 0 0 auto;
+  width: 4.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .1rem;
+  padding: .5rem .25rem;
+  border: 1px solid var(--box-border);
+  border-radius: .75rem;
+  background: var(--box-bg);
+  color: var(--box-text);          /* explicit, no longer inherited */
+  cursor: pointer;
+  scroll-snap-align: center;
+}
+.date-box .dow { font-size: .7rem; text-transform: uppercase; color: var(--box-muted); }
+.date-box .day { font-size: 1.4rem; font-weight: 700; line-height: 1.1; color: var(--box-text); }
+.date-box .mon { font-size: .65rem; white-space: nowrap; color: var(--box-muted); }
+
+.date-box:hover { border-color: var(--box-active-bg); }
+
+.date-box.active {
+  background: var(--box-active-bg);
+  border-color: var(--box-active-bg);
+}
+.date-box.active .dow,
+.date-box.active .day,
+.date-box.active .mon { color: var(--box-active-text); }
+
+.strip-arrow {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid var(--box-border);
+  background: var(--box-bg);
+  color: var(--box-text);          /* arrows were affected by the same problem */
+  cursor: pointer;
+}

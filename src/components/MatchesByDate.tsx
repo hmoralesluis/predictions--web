@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMatchDates, useMatches } from "../api/hooks";
+import { useMatchDates } from "../api/hooks";
+import { MatchPredictionsTable } from "./MatchPredictionsTable";
 import "./MatchesByDate.css";
 
 // "2026-10-20" -> local Date (avoids the UTC off-by-one of new Date("2026-10-20"))
@@ -11,8 +12,7 @@ const weekday = new Intl.DateTimeFormat(undefined, { weekday: "short" });
 const month = new Intl.DateTimeFormat(undefined, { month: "short" });
 
 export function MatchesByDate() {
-  const { data: dates = [], isLoading, error } = useMatchDates();
-  const { data: matches = [] } = useMatches();
+  const { data: dates = [], isLoading, error } = useMatchDates(); 
   const [selected, setSelected] = useState<string | null>(null);
   const stripRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +44,6 @@ export function MatchesByDate() {
   if (error) return <p className="error">Could not load match dates.</p>;
   if (sortedDates.length === 0) return <p className="muted">No match dates yet.</p>;
 
-  const dayMatches = selected ? matches.filter((m) => m.date === selected) : [];
 
   return (
     <div>
@@ -80,23 +79,8 @@ export function MatchesByDate() {
         </button>
       </div>
 
-      {selected && (
-        dayMatches.length === 0 ? (
-          <p className="muted">No matches on {selected}.</p>
-        ) : (
-          <table>
-            <thead><tr><th>Match</th><th>Result</th></tr></thead>
-            <tbody>
-              {dayMatches.map((m) => (
-                <tr key={m.id}>
-                  <td>{m.home} – {m.away}</td>
-                  <td>{m.result ?? <span className="muted">Pending</span>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )
-      )}
+      {selected && <MatchPredictionsTable date={selected} />}
+      
     </div>
   );
 }

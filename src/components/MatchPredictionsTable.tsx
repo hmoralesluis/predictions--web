@@ -2,6 +2,7 @@
 import { useMemo } from "react";
 import { useMatchPredictions } from "../api/hooks";
 import type { MatchPrediction, Outcome } from "../api/types";
+import "./MatchPredictionsTable.css";
 
 type MatchInfo = MatchPrediction["match"];
 type TeamState = "win" | "lose" | "draw" | "";

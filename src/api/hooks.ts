@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { request } from "./client";
 import type {
-  DayStats, Match, MatchStats, NewMatch, NewPrediction, PlayedDates, PredictorStats, SetResultBody, 
+  DayStats, Match, MatchStats, NewMatch, NewPrediction, PlayedDates, PredictorStats, SetResultBody, MatchPrediction,
 } from "./types";
 
 export const useMatches = () =>

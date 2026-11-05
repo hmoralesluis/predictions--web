@@ -71,3 +71,11 @@ export function useMatchDates() {
     queryFn: () => request<string[]>("/matches/dates"),    
   });
 }
+
+// api/hooks.ts (add MatchPrediction to the type import)
+export const useMatchPredictions = (date: string) =>
+  useQuery({
+    queryKey: ["matches", "predictions", date],
+    queryFn: () => request<MatchPrediction[]>(`/matches/stats?date=${date}`),
+    enabled: !!date,
+  });

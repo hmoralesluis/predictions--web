@@ -10,3 +10,12 @@ export interface SetResultBody { /* e.g. result: string */ }
 export interface MatchStats { /* ... */ }
 export interface DayStats { /* ... */ }
 export interface PredictorStats { /* ... */ }
+
+
+export type Outcome = "HomeWin" | "Draw" | "AwayWin"; // skip if you already have it
+
+export interface MatchPrediction {
+  match: { id: string; home: string; away: string; date: string; result: Outcome | null };
+  prediction: { id: string; matchId: string; predictorId: string; picked: Outcome } | null;
+  predictorName: string | null;
+}

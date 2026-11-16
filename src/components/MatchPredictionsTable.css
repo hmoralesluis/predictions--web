@@ -36,9 +36,21 @@
   font: inherit;
   font-size: .85rem;
   font-weight: 600;
-  color: inherit;
+  /* no "color: inherit": the .badge.hit / .miss / .open colors must apply */
   cursor: pointer;
   text-align: center;
 }
 .stats select.badge.edit:disabled { opacity: .6; cursor: wait; }
-.stats select.badge.none { background: transparent; border: 1px dashed var(--border, #ccc); }
+
+/* empty prediction: transparent, so use the page text color */
+.stats select.badge.none {
+  background: transparent;
+  border: 1px dashed var(--border, #ccc);
+  color: inherit;
+}
+
+/* the opened dropdown list: keep it readable whatever the theme is */
+.stats select.badge.edit option {
+  background: #fff;
+  color: #111827;
+}

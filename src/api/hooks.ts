@@ -10,6 +10,7 @@ import type {
   MatchWithBets,
   NewMatch,
   NewPrediction,
+  NewPredictor,
   Outcome,
   PredictorStats,
   SetResultBody,
@@ -218,5 +219,15 @@ export function useSetDayTrust() {
         body: JSON.stringify({ date, trust }),
       }),
     onSuccess: refresh,
+  });
+}
+
+
+export function useCreatePredictor() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: (p: NewPredictor) =>
+      request<unknown>("/predictors", { method: "POST", body: JSON.stringify(p) }),
+    onSuccess: invalidate,
   });
 }

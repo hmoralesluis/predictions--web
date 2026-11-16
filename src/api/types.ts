@@ -61,3 +61,5 @@ export type MatchWithBets = {
   match: Match;
   bets: { positionBet: PositionBet; bet: MatchBet }[];
 };
+
+export type NewPredictor = { name: string };

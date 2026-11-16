@@ -4,6 +4,8 @@ import { useCreateMatch, useMatches } from "../api/hooks";
 
 import { MatchesByDate } from "../components/MatchesByDate";
 
+import { AddPredictorForm } from "../components/AddPredictorForm";
+
 type Field = "home" | "away" | "date";
 const empty = { home: "", away: "", date: "" };
 
@@ -54,6 +56,11 @@ export default function MatchesPage() {
           <button disabled={create.isPending}>{create.isPending ? "Saving…" : "Add match"}</button>
         </form>
         {apiError && !hasFieldErrors && <p className="error">{apiError.message}</p>}
+      </section>
+   
+      <section>
+        <h2>Add a predictor</h2>
+        <AddPredictorForm />
       </section>
 
       <section>

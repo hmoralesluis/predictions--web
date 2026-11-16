@@ -19,6 +19,7 @@ export interface Match {
   result: Outcome | null;
   matchType: MatchDayType;
   matchTrust: Trust;
+  createdAt: string;
 }
 
 export interface NewMatch { home: string; away: string; date: string | null }

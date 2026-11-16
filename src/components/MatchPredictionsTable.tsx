@@ -120,7 +120,9 @@ export function MatchPredictionsTable({ date }: { date: string }) {
       predictors.map((n) => [n, { correct: 0, settled: 0 }]),
     );
     const tally = { home: 0, draw: 0, away: 0 };
-    const rows = [...byMatch.values()];
+    const rows = [...byMatch.values()].sort(
+      (a, b) => Date.parse(a.match.createdAt) - Date.parse(b.match.createdAt),
+    );
 
     for (const { match, picks } of rows) {
       if (!match.result) continue;

@@ -12,7 +12,7 @@ export interface DayStats { /* ... */ }
 export interface PredictorStats { /* ... */ }
 
 
-export type Outcome = "HomeWin" | "Draw" | "AwayWin"; // skip if you already have it
+export type Outcome = "HomeWin" | "Draw" | "AwayWin" | "Pending"; // skip if you already have it
 
 export interface MatchPrediction {
   match: { id: string; home: string; away: string; date: string; result: Outcome | null };
@@ -35,3 +35,5 @@ export type MatchWithBets = {
   match: MatchPrediction["match"];
   bets: { positionBet: PositionBet; bet: MatchBet }[];
 };
+
+export type Prediction = { id: string; matchId: string; predictorId: string; picked: Outcome };

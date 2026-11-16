@@ -5,10 +5,12 @@ import {
   useGenerateBets,
   useMatchPredictions,
   usePositionBets,
+  useSetDayType,
   useSetMatchResult,
+  useSetMatchType,
   useSetPrediction,
 } from "../api/hooks";
-import type { MatchBet, MatchPrediction, Outcome, PositionBet } from "../api/types";
+import type { MatchBet, MatchDayType, MatchPrediction, Outcome, PositionBet } from "../api/types";
 import "./MatchPredictionsTable.css";
 
 type MatchInfo = MatchPrediction["match"];
@@ -21,6 +23,13 @@ const LABEL: Record<Outcome, string> = {
   Draw: "Draw",
   AwayWin: "Away",
   Pending: "—",
+};
+
+const MATCH_TYPES: MatchDayType[] = ["Liga", "CopaDelRey", "Champions"];
+const TYPE_LABEL: Record<MatchDayType, string> = {
+  Liga: "Liga",
+  CopaDelRey: "Copa del Rey",
+  Champions: "Champions",
 };
 
 function teamStates(result: Outcome | null): { home: TeamState; away: TeamState } {
@@ -38,13 +47,25 @@ export function MatchPredictionsTable({ date }: { date: string }) {
 
   const setResult = useSetMatchResult();
   const setPrediction = useSetPrediction();
+  const setMatchType = useSetMatchType();
+  const setDayType = useSetDayType();
   const generate = useGenerateBets();
   const deleteAuto = useDeleteAutoBets();
 
   const saving =
-    setResult.isPending || setPrediction.isPending || generate.isPending || deleteAuto.isPending;
+    setResult.isPending ||
+    setPrediction.isPending ||
+    setMatchType.isPending ||
+    setDayType.isPending ||
+    generate.isPending ||
+    deleteAuto.isPending;
   const saveFailed =
-    setResult.isError || setPrediction.isError || generate.isError || deleteAuto.isError;
+    setResult.isError ||
+    setPrediction.isError ||
+    setMatchType.isError ||
+    setDayType.isError ||
+    generate.isError ||
+    deleteAuto.isError;
 
   // Predictors: one column per predictor
   const { rows, predictors, predictorIds, score, tally } = useMemo(() => {
@@ -138,6 +159,22 @@ export function MatchPredictionsTable({ date }: { date: string }) {
         <button disabled={saving} onClick={() => deleteAuto.mutate(date)}>
           {deleteAuto.isPending ? "Deleting…" : "Delete Ai bets"}
         </button>
+
+        {/* Always shows the placeholder, so every pick is a fresh "set all" action */}
+        <select
+          value=""
+          disabled={saving}
+          title="Set the type of every match on this date"
+          onChange={(e) =>
+            setDayType.mutate({ date, dayType: e.target.value as MatchDayType })
+          }
+        >
+          <option value="" disabled>Set all as…</option>
+          {MATCH_TYPES.map((t) => (
+            <option key={t} value={t}>{TYPE_LABEL[t]}</option>
+          ))}
+        </select>
+
         {saveFailed && <span className="error">Could not save the change. Try again.</span>}
       </div>
 
@@ -153,6 +190,7 @@ export function MatchPredictionsTable({ date }: { date: string }) {
               </span>
             </th>
             <th>Result</th>
+            <th>Type</th>
             {predictors.map((p) => {
               const value = pct(p);
               return (
@@ -218,6 +256,25 @@ export function MatchPredictionsTable({ date }: { date: string }) {
                   </select>
                 </td>
 
+                {/* Editable match type */}
+                <td>
+                  <select
+                    className="badge edit type"
+                    value={match.matchType}
+                    disabled={saving}
+                    onChange={(e) =>
+                      setMatchType.mutate({
+                        id: match.id,
+                        matchType: e.target.value as MatchDayType,
+                      })
+                    }
+                  >
+                    {MATCH_TYPES.map((mt) => (
+                      <option key={mt} value={mt}>{TYPE_LABEL[mt]}</option>
+                    ))}
+                  </select>
+                </td>
+
                 {/* Editable predictions */}
                 {predictors.map((p) => {
                   const pick = picks.get(p);
@@ -274,7 +331,7 @@ export function MatchPredictionsTable({ date }: { date: string }) {
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={2}>Score</td>
+            <td colSpan={3}>Score</td>
             {predictors.map((p) => (
               <td key={p}>
                 {score[p].settled === 0

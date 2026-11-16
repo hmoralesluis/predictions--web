@@ -4,6 +4,7 @@ import type {
   DayStats,
   Match,
   MatchBet,
+  MatchDayType,
   MatchPrediction,
   MatchStats,
   MatchWithBets,
@@ -163,5 +164,32 @@ export function useGenerateBets() {
     mutationFn: (date: string) =>
       request<MatchBet[]>(`/matchbets/generate?date=${encodeURIComponent(date)}`),
     onSuccess: (_data, date) => qc.invalidateQueries({ queryKey: ["positionbets", date] }),
+  });
+}
+
+// Sets the type of a single match (PUT /matches/{id}/type).
+export function useSetMatchType() {
+  const refresh = useRefreshTable();
+  return useMutation({
+    mutationFn: ({ id, matchType }: { id: string; matchType: MatchDayType }) =>
+      request<Match>(`/matches/${id}/type`, {
+        method: "PUT",
+        body: JSON.stringify({ matchType }),
+      }),
+    onSuccess: refresh,
+  });
+}
+
+// Sets the type of every match on a date (existing POST /matches/type endpoint).
+// Note the body field is "dayType" here, matching UpdateMatchTypeInData.
+export function useSetDayType() {
+  const refresh = useRefreshTable();
+  return useMutation({
+    mutationFn: ({ date, dayType }: { date: string; dayType: MatchDayType }) =>
+      request<boolean>("/matches/type", {
+        method: "POST",
+        body: JSON.stringify({ date, dayType }),
+      }),
+    onSuccess: refresh,
   });
 }

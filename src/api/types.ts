@@ -1,22 +1,48 @@
-export interface Match { id: string; home: string; away: string; date: string; result: string | null }
+export type Outcome = "HomeWin" | "Draw" | "AwayWin" | "Pending";
+
+export type MatchDayType = "Liga" | "CopaDelRey" | "Champions";
+
+export type Trust =
+  | "MuyBaja"
+  | "Baja"
+  | "MediaBaja"
+  | "Media"
+  | "MediaAlta"
+  | "Alta"
+  | "MuyAlta";
+
+export interface Match {
+  id: string;
+  home: string;
+  away: string;
+  date: string;
+  result: Outcome | null;
+  matchType: MatchDayType;
+  matchTrust: Trust;
+}
+
 export interface NewMatch { home: string; away: string; date: string | null }
 export interface PlayedDates { date: Date }
 
 // Check the request records of AddPrediction and SetResult in your backend:
 export interface NewPrediction { /* e.g. predictorId: string; pick: string */ }
-export interface SetResultBody { /* e.g. result: string */ }
+export interface SetResultBody { result: Outcome | null }
 
 // Check what each stats handler returns:
 export interface MatchStats { /* ... */ }
 export interface DayStats { /* ... */ }
 export interface PredictorStats { /* ... */ }
 
-
-export type Outcome = "HomeWin" | "Draw" | "AwayWin" | "Pending"; // skip if you already have it
+export type Prediction = {
+  id: string;
+  matchId: string;
+  predictorId: string;
+  picked: Outcome;
+};
 
 export interface MatchPrediction {
-  match: { id: string; home: string; away: string; date: string; result: Outcome | null };
-  prediction: { id: string; matchId: string; predictorId: string; picked: Outcome } | null;
+  match: Match;
+  prediction: Prediction | null;
   predictorName: string | null;
 }
 
@@ -32,8 +58,6 @@ export type MatchBet = {
 };
 
 export type MatchWithBets = {
-  match: MatchPrediction["match"];
+  match: Match;
   bets: { positionBet: PositionBet; bet: MatchBet }[];
 };
-
-export type Prediction = { id: string; matchId: string; predictorId: string; picked: Outcome };

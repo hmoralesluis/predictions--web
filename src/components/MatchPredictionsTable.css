@@ -58,3 +58,8 @@
 .badge.type { background: #ede9fe; color: #5b21b6; }
 
 .badge.trust { background: #fef3c7; color: #92400e; }
+
+.stats select.badge.edit {
+  padding: .15rem .4rem;
+  text-align-last: center; /* centra el texto dentro del select */
+}

@@ -231,3 +231,21 @@ export function useCreatePredictor() {
     onSuccess: invalidate,
   });
 }
+
+export function useCreatePositionBet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (b: { name: string; date: string }) =>
+      request<unknown>("/positionbets", { method: "POST", body: JSON.stringify(b) }),
+    onSuccess: (_d, b) => qc.invalidateQueries({ queryKey: ["positionbets", b.date] }),
+  });
+}
+
+export function useSetMatchBet(date: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (b: { matchId: string; positionBetId: string; picked: Outcome }) =>
+      request<unknown>("/matchbets", { method: "PUT", body: JSON.stringify(b) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["positionbets", date] }),
+  });
+}

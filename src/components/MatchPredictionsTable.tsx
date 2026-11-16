@@ -1,12 +1,15 @@
 // components/MatchPredictionsTable.tsx
-import { useMemo } from "react";
+import { useMemo, useState, type FormEvent } from "react";
+import { ApiError } from "../api/client";
 import {
+  useCreatePositionBet,
   useDeleteAutoBets,
   useGenerateBets,
   useMatchPredictions,
   usePositionBets,
   useSetDayTrust,
   useSetDayType,
+  useSetMatchBet,
   useSetMatchResult,
   useSetMatchTrust,
   useSetMatchType,
@@ -27,10 +30,19 @@ type TeamState = "win" | "lose" | "draw" | "";
 type Score = { correct: number; settled: number };
 
 const OUTCOMES: Outcome[] = ["HomeWin", "Draw", "AwayWin"];
+
+// Full labels: used in tooltips
 const LABEL: Record<Outcome, string> = {
   HomeWin: "Home",
   Draw: "Draw",
   AwayWin: "Away",
+  Pending: "—",
+};
+// Short labels: shown inside the table cells to save space
+const SHORT: Record<Outcome, string> = {
+  HomeWin: "H",
+  Draw: "D",
+  AwayWin: "A",
   Pending: "—",
 };
 
@@ -39,6 +51,11 @@ const TYPE_LABEL: Record<MatchDayType, string> = {
   Liga: "Liga",
   CopaDelRey: "Copa del Rey",
   Champions: "Champions",
+};
+const TYPE_SHORT: Record<MatchDayType, string> = {
+  Liga: "L",
+  CopaDelRey: "CR",
+  Champions: "C",
 };
 
 const TRUSTS: Trust[] = ["MuyBaja", "Baja", "MediaBaja", "Media", "MediaAlta", "Alta", "MuyAlta"];
@@ -50,6 +67,15 @@ const TRUST_LABEL: Record<Trust, string> = {
   MediaAlta: "Media alta",
   Alta: "Alta",
   MuyAlta: "Muy alta",
+};
+const TRUST_SHORT: Record<Trust, string> = {
+  MuyBaja: "MB",
+  Baja: "B",
+  MediaBaja: "MdB",
+  Media: "M",
+  MediaAlta: "MdA",
+  Alta: "A",
+  MuyAlta: "MA",
 };
 
 function teamStates(result: Outcome | null): { home: TeamState; away: TeamState } {
@@ -73,6 +99,16 @@ export function MatchPredictionsTable({ date }: { date: string }) {
   const setDayTrust = useSetDayTrust();
   const generate = useGenerateBets();
   const deleteAuto = useDeleteAutoBets();
+  const createBet = useCreatePositionBet();
+  const setMatchBet = useSetMatchBet(date);
+  const [betName, setBetName] = useState("");
+
+  const createError = createBet.error instanceof ApiError ? createBet.error : null;
+
+  function submitBet(e: FormEvent) {
+    e.preventDefault();
+    createBet.mutate({ name: betName.trim(), date }, { onSuccess: () => setBetName("") });
+  }
 
   const saving =
     setResult.isPending ||
@@ -82,7 +118,9 @@ export function MatchPredictionsTable({ date }: { date: string }) {
     setMatchTrust.isPending ||
     setDayTrust.isPending ||
     generate.isPending ||
-    deleteAuto.isPending;
+    deleteAuto.isPending ||
+    createBet.isPending ||
+    setMatchBet.isPending;
   const saveFailed =
     setResult.isError ||
     setPrediction.isError ||
@@ -91,7 +129,8 @@ export function MatchPredictionsTable({ date }: { date: string }) {
     setMatchTrust.isError ||
     setDayTrust.isError ||
     generate.isError ||
-    deleteAuto.isError;
+    deleteAuto.isError ||
+    setMatchBet.isError;
 
   // Predictors: one column per predictor
   const { rows, predictors, predictorIds, score, tally } = useMemo(() => {
@@ -152,7 +191,7 @@ export function MatchPredictionsTable({ date }: { date: string }) {
         perMatch.set(positionBet.id, bet);
 
         betScore[positionBet.id] ??= { correct: 0, settled: 0 };
-        if (match.result) {
+        if (match.result && bet.picked !== "Pending") {
           betScore[positionBet.id].settled++;
           if (bet.picked === match.result) betScore[positionBet.id].correct++;
         }
@@ -188,6 +227,19 @@ export function MatchPredictionsTable({ date }: { date: string }) {
           {deleteAuto.isPending ? "Deleting…" : "Delete Ai bets"}
         </button>
 
+        {/* Manual position bet: creates the column with a Pending cell for every match of the date */}
+        <form className="inline-form" onSubmit={submitBet}>
+          <input
+            value={betName}
+            onChange={(e) => setBetName(e.target.value)}
+            placeholder="New bet name"
+            disabled={saving}
+          />
+          <button disabled={saving || betName.trim() === ""}>
+            {createBet.isPending ? "Adding…" : "Add bet"}
+          </button>
+        </form>
+
         {/* Always shows the placeholder, so every pick is a fresh "set all" action */}
         <select
           value=""
@@ -218,6 +270,9 @@ export function MatchPredictionsTable({ date }: { date: string }) {
         </select>
 
         {saveFailed && <span className="error">Could not save the change. Try again.</span>}
+        {createBet.isError && (
+          <span className="error">{createError?.message ?? "Could not add the bet."}</span>
+        )}
       </div>
 
       <table className="stats">
@@ -279,10 +334,11 @@ export function MatchPredictionsTable({ date }: { date: string }) {
                   </strong>
                 </td>
 
-                {/* Editable result ("Pending" clears it) */}
+                {/* Editable result ("P" = Pending, clears it) */}
                 <td>
                   <select
                     className={`badge edit ${match.result ? "result" : "pending"}`}
+                    title={match.result ? LABEL[match.result] : "Pending"}
                     value={match.result ?? ""}
                     disabled={saving}
                     onChange={(e) =>
@@ -292,9 +348,9 @@ export function MatchPredictionsTable({ date }: { date: string }) {
                       })
                     }
                   >
-                    <option value="">Pending</option>
+                    <option value="">P</option>
                     {OUTCOMES.map((o) => (
-                      <option key={o} value={o}>{LABEL[o]}</option>
+                      <option key={o} value={o}>{SHORT[o]}</option>
                     ))}
                   </select>
                 </td>
@@ -303,6 +359,7 @@ export function MatchPredictionsTable({ date }: { date: string }) {
                 <td>
                   <select
                     className="badge edit type"
+                    title={TYPE_LABEL[match.matchType]}
                     value={match.matchType}
                     disabled={saving}
                     onChange={(e) =>
@@ -313,7 +370,7 @@ export function MatchPredictionsTable({ date }: { date: string }) {
                     }
                   >
                     {MATCH_TYPES.map((mt) => (
-                      <option key={mt} value={mt}>{TYPE_LABEL[mt]}</option>
+                      <option key={mt} value={mt}>{TYPE_SHORT[mt]}</option>
                     ))}
                   </select>
                 </td>
@@ -322,6 +379,7 @@ export function MatchPredictionsTable({ date }: { date: string }) {
                 <td>
                   <select
                     className="badge edit trust"
+                    title={TRUST_LABEL[match.matchTrust]}
                     value={match.matchTrust}
                     disabled={saving}
                     onChange={(e) =>
@@ -332,7 +390,7 @@ export function MatchPredictionsTable({ date }: { date: string }) {
                     }
                   >
                     {TRUSTS.map((tr) => (
-                      <option key={tr} value={tr}>{TRUST_LABEL[tr]}</option>
+                      <option key={tr} value={tr}>{TRUST_SHORT[tr]}</option>
                     ))}
                   </select>
                 </td>
@@ -348,6 +406,7 @@ export function MatchPredictionsTable({ date }: { date: string }) {
                     <td key={p}>
                       <select
                         className={`badge edit ${state}`}
+                        title={pick ? LABEL[pick] : "No pick yet"}
                         value={pick ?? ""}
                         disabled={saving}
                         onChange={(e) =>
@@ -361,7 +420,7 @@ export function MatchPredictionsTable({ date }: { date: string }) {
                         {!pick && <option value="" disabled>—</option>}
                         {OUTCOMES.map((o) => (
                           <option key={o} value={o}>
-                            {LABEL[o]}
+                            {SHORT[o]}
                             {pick === o && state === "hit" ? " ✓" : ""}
                             {pick === o && state === "miss" ? " ✗" : ""}
                           </option>
@@ -371,18 +430,52 @@ export function MatchPredictionsTable({ date }: { date: string }) {
                   );
                 })}
 
-                {/* Position bets stay read-only (they are generated) */}
+                {/* Generated (auto) bets are read-only; manual bets are editable */}
                 {betColumns.map((b, i) => {
                   const bet = betsByMatch.get(match.id)?.get(b.id);
                   const cls = i === 0 ? "bet-start" : undefined;
-                  if (!bet) {
+                  const pick = bet && bet.picked !== "Pending" ? bet.picked : undefined;
+                  const state = !pick
+                    ? "none"
+                    : !match.result ? "open"
+                    : pick === match.result ? "hit" : "miss";
+
+                  if (!b.isAuto) {
+                    return (
+                      <td key={b.id} className={cls}>
+                        <select
+                          className={`badge edit ${state}`}
+                          title={pick ? LABEL[pick] : "No pick yet"}
+                          value={pick ?? ""}
+                          disabled={saving}
+                          onChange={(e) =>
+                            setMatchBet.mutate({
+                              matchId: match.id,
+                              positionBetId: b.id,
+                              picked: e.target.value as Outcome,
+                            })
+                          }
+                        >
+                          {!pick && <option value="" disabled>—</option>}
+                          {OUTCOMES.map((o) => (
+                            <option key={o} value={o}>
+                              {SHORT[o]}
+                              {pick === o && state === "hit" ? " ✓" : ""}
+                              {pick === o && state === "miss" ? " ✗" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    );
+                  }
+
+                  if (!pick) {
                     return <td key={b.id} className={cls}><span className="muted">—</span></td>;
                   }
-                  const state = !match.result ? "open" : bet.picked === match.result ? "hit" : "miss";
                   return (
                     <td key={b.id} className={cls}>
-                      <span className={`badge ${state}`}>
-                        {LABEL[bet.picked]} {state === "hit" && "✓"}{state === "miss" && "✗"}
+                      <span className={`badge ${state}`} title={LABEL[pick]}>
+                        {SHORT[pick]} {state === "hit" && "✓"}{state === "miss" && "✗"}
                       </span>
                     </td>
                   );

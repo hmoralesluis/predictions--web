@@ -19,3 +19,19 @@ export interface MatchPrediction {
   prediction: { id: string; matchId: string; predictorId: string; picked: Outcome } | null;
   predictorName: string | null;
 }
+
+export type PositionBet = { id: string; name: string; isAuto: boolean };
+
+export type MatchBet = {
+  id: string;
+  matchId: string;
+  positionBetId: string;
+  picked: Outcome;
+  homeScore: number | null;
+  awayScore: number | null;
+};
+
+export type MatchWithBets = {
+  match: MatchPrediction["match"];
+  bets: { positionBet: PositionBet; bet: MatchBet }[];
+};

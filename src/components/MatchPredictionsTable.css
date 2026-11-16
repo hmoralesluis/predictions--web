@@ -13,3 +13,16 @@
 .team.win  { color: #166534; }
 .team.lose { color: #991b1b; }
 .team.draw { color: #92400e; }
+
+/* header extras */
+.tally { display: inline-flex; gap: .3rem; margin-left: .6rem; vertical-align: middle; }
+.chip  { padding: .1rem .5rem; border-radius: 999px; font-size: .75rem; font-weight: 600;
+         background: #e5e7eb; color: #374151; }
+
+.pct { display: inline-block; margin-left: .5rem; padding: .1rem .5rem; border-radius: 999px;
+       font-size: .75rem; font-weight: 700; vertical-align: middle; }
+.pct.good { background: #dcfce7; color: #166534; }
+.pct.bad  { background: #fee2e2; color: #991b1b; }
+.pct.none { background: #e5e7eb; color: #4b5563; }
+
+.stats .bet-start { border-left: 2px solid var(--border, #ccc); }

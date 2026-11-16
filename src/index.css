@@ -4,7 +4,7 @@
 }
 * { box-sizing: border-box; }
 body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui, sans-serif; }
-main { max-width:760px; margin:0 auto; padding:24px 16px 64px; }
+main { margin:0 auto; padding:24px 60px 64px; }
 header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:24px; }
 section { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; }
 nav { display:flex; gap:4px; }

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { request } from "./client";
 import type {
-  DayStats, Match, MatchStats, NewMatch, NewPrediction, PlayedDates, PredictorStats, SetResultBody, MatchPrediction,
+  DayStats, Match, MatchStats, NewMatch, NewPrediction, MatchWithBets, PredictorStats, SetResultBody, MatchPrediction,
 } from "./types";
 
 export const useMatches = () =>
@@ -79,3 +79,12 @@ export const useMatchPredictions = (date: string) =>
     queryFn: () => request<MatchPrediction[]>(`/matches/stats?date=${date}`),
     enabled: !!date,
   });
+
+
+  export function usePositionBets(date: string) {
+  return useQuery({
+    queryKey: ["positionbets", date],
+    queryFn: () => request<MatchWithBets[]>(`/positionbets?date=${date}`),
+    enabled: !!date,
+  });
+}

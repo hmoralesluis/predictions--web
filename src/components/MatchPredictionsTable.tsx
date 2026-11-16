@@ -5,12 +5,21 @@ import {
   useGenerateBets,
   useMatchPredictions,
   usePositionBets,
+  useSetDayTrust,
   useSetDayType,
   useSetMatchResult,
+  useSetMatchTrust,
   useSetMatchType,
   useSetPrediction,
 } from "../api/hooks";
-import type { MatchBet, MatchDayType, MatchPrediction, Outcome, PositionBet } from "../api/types";
+import type {
+  MatchBet,
+  MatchDayType,
+  MatchPrediction,
+  Outcome,
+  PositionBet,
+  Trust,
+} from "../api/types";
 import "./MatchPredictionsTable.css";
 
 type MatchInfo = MatchPrediction["match"];
@@ -32,6 +41,17 @@ const TYPE_LABEL: Record<MatchDayType, string> = {
   Champions: "Champions",
 };
 
+const TRUSTS: Trust[] = ["MuyBaja", "Baja", "MediaBaja", "Media", "MediaAlta", "Alta", "MuyAlta"];
+const TRUST_LABEL: Record<Trust, string> = {
+  MuyBaja: "Muy baja",
+  Baja: "Baja",
+  MediaBaja: "Media baja",
+  Media: "Media",
+  MediaAlta: "Media alta",
+  Alta: "Alta",
+  MuyAlta: "Muy alta",
+};
+
 function teamStates(result: Outcome | null): { home: TeamState; away: TeamState } {
   switch (result) {
     case "HomeWin": return { home: "win", away: "lose" };
@@ -49,6 +69,8 @@ export function MatchPredictionsTable({ date }: { date: string }) {
   const setPrediction = useSetPrediction();
   const setMatchType = useSetMatchType();
   const setDayType = useSetDayType();
+  const setMatchTrust = useSetMatchTrust();
+  const setDayTrust = useSetDayTrust();
   const generate = useGenerateBets();
   const deleteAuto = useDeleteAutoBets();
 
@@ -57,6 +79,8 @@ export function MatchPredictionsTable({ date }: { date: string }) {
     setPrediction.isPending ||
     setMatchType.isPending ||
     setDayType.isPending ||
+    setMatchTrust.isPending ||
+    setDayTrust.isPending ||
     generate.isPending ||
     deleteAuto.isPending;
   const saveFailed =
@@ -64,6 +88,8 @@ export function MatchPredictionsTable({ date }: { date: string }) {
     setPrediction.isError ||
     setMatchType.isError ||
     setDayType.isError ||
+    setMatchTrust.isError ||
+    setDayTrust.isError ||
     generate.isError ||
     deleteAuto.isError;
 
@@ -169,9 +195,23 @@ export function MatchPredictionsTable({ date }: { date: string }) {
             setDayType.mutate({ date, dayType: e.target.value as MatchDayType })
           }
         >
-          <option value="" disabled>Set all as…</option>
+          <option value="" disabled>Set all type as…</option>
           {MATCH_TYPES.map((t) => (
             <option key={t} value={t}>{TYPE_LABEL[t]}</option>
+          ))}
+        </select>
+
+        <select
+          value=""
+          disabled={saving}
+          title="Set the trust of every match on this date"
+          onChange={(e) =>
+            setDayTrust.mutate({ date, trust: e.target.value as Trust })
+          }
+        >
+          <option value="" disabled>Set all trust as…</option>
+          {TRUSTS.map((t) => (
+            <option key={t} value={t}>{TRUST_LABEL[t]}</option>
           ))}
         </select>
 
@@ -191,6 +231,7 @@ export function MatchPredictionsTable({ date }: { date: string }) {
             </th>
             <th>Result</th>
             <th>Type</th>
+            <th>Trust</th>
             {predictors.map((p) => {
               const value = pct(p);
               return (
@@ -275,6 +316,25 @@ export function MatchPredictionsTable({ date }: { date: string }) {
                   </select>
                 </td>
 
+                {/* Editable match trust */}
+                <td>
+                  <select
+                    className="badge edit trust"
+                    value={match.matchTrust}
+                    disabled={saving}
+                    onChange={(e) =>
+                      setMatchTrust.mutate({
+                        id: match.id,
+                        trust: e.target.value as Trust,
+                      })
+                    }
+                  >
+                    {TRUSTS.map((tr) => (
+                      <option key={tr} value={tr}>{TRUST_LABEL[tr]}</option>
+                    ))}
+                  </select>
+                </td>
+
                 {/* Editable predictions */}
                 {predictors.map((p) => {
                   const pick = picks.get(p);
@@ -331,7 +391,7 @@ export function MatchPredictionsTable({ date }: { date: string }) {
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={3}>Score</td>
+            <td colSpan={4}>Score</td>
             {predictors.map((p) => (
               <td key={p}>
                 {score[p].settled === 0

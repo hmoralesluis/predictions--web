@@ -13,6 +13,7 @@ import type {
   Outcome,
   PredictorStats,
   SetResultBody,
+  Trust,
 } from "./types";
 
 export const useMatches = () =>
@@ -189,6 +190,32 @@ export function useSetDayType() {
       request<boolean>("/matches/type", {
         method: "POST",
         body: JSON.stringify({ date, dayType }),
+      }),
+    onSuccess: refresh,
+  });
+}
+
+// Sets the trust of a single match (PUT /matches/{id}/trust).
+export function useSetMatchTrust() {
+  const refresh = useRefreshTable();
+  return useMutation({
+    mutationFn: ({ id, trust }: { id: string; trust: Trust }) =>
+      request<Match>(`/matches/${id}/trust`, {
+        method: "PUT",
+        body: JSON.stringify({ trust }),
+      }),
+    onSuccess: refresh,
+  });
+}
+
+// Sets the trust of every match on a date (POST /matches/trust).
+export function useSetDayTrust() {
+  const refresh = useRefreshTable();
+  return useMutation({
+    mutationFn: ({ date, trust }: { date: string; trust: Trust }) =>
+      request<boolean>("/matches/trust", {
+        method: "POST",
+        body: JSON.stringify({ date, trust }),
       }),
     onSuccess: refresh,
   });

@@ -1,6 +1,13 @@
 // components/MatchPredictionsTable.tsx
 import { useMemo } from "react";
-import { useMatchPredictions, usePositionBets } from "../api/hooks";
+import {
+  useDeleteAutoBets,
+  useGenerateBets,
+  useMatchPredictions,
+  usePositionBets,
+  useSetMatchResult,
+  useSetPrediction,
+} from "../api/hooks";
 import type { MatchBet, MatchPrediction, Outcome, PositionBet } from "../api/types";
 import "./MatchPredictionsTable.css";
 
@@ -8,7 +15,13 @@ type MatchInfo = MatchPrediction["match"];
 type TeamState = "win" | "lose" | "draw" | "";
 type Score = { correct: number; settled: number };
 
-const LABEL: Record<Outcome, string> = { HomeWin: "Home", Draw: "Draw", AwayWin: "Away" };
+const OUTCOMES: Outcome[] = ["HomeWin", "Draw", "AwayWin"];
+const LABEL: Record<Outcome, string> = {
+  HomeWin: "Home",
+  Draw: "Draw",
+  AwayWin: "Away",
+  Pending: "—",
+};
 
 function teamStates(result: Outcome | null): { home: TeamState; away: TeamState } {
   switch (result) {
@@ -23,9 +36,20 @@ export function MatchPredictionsTable({ date }: { date: string }) {
   const { data = [], isLoading, error } = useMatchPredictions(date);
   const { data: betData = [] } = usePositionBets(date);
 
+  const setResult = useSetMatchResult();
+  const setPrediction = useSetPrediction();
+  const generate = useGenerateBets();
+  const deleteAuto = useDeleteAutoBets();
+
+  const saving =
+    setResult.isPending || setPrediction.isPending || generate.isPending || deleteAuto.isPending;
+  const saveFailed =
+    setResult.isError || setPrediction.isError || generate.isError || deleteAuto.isError;
+
   // Predictors: one column per predictor
-  const { rows, predictors, score, tally } = useMemo(() => {
+  const { rows, predictors, predictorIds, score, tally } = useMemo(() => {
     const byMatch = new Map<string, { match: MatchInfo; picks: Map<string, Outcome> }>();
+    const predictorIds = new Map<string, string>(); // name -> id
     const names = new Set<string>();
 
     for (const r of data) {
@@ -35,8 +59,12 @@ export function MatchPredictionsTable({ date }: { date: string }) {
         byMatch.set(r.match.id, entry);
       }
       if (r.prediction && r.predictorName) {
-        entry.picks.set(r.predictorName, r.prediction.picked);
+        predictorIds.set(r.predictorName, r.prediction.predictorId);
         names.add(r.predictorName);
+        // "Pending" means the predictor hasn't picked yet: not a pick
+        if (r.prediction.picked !== "Pending") {
+          entry.picks.set(r.predictorName, r.prediction.picked);
+        }
       }
     }
 
@@ -59,7 +87,7 @@ export function MatchPredictionsTable({ date }: { date: string }) {
         if (pick === match.result) score[name].correct++;
       }
     }
-    return { rows, predictors, score, tally };
+    return { rows, predictors, predictorIds, score, tally };
   }, [data]);
 
   // Position bets: one column per PositionBet ("Ai Bet", "Ai Bet 2", ...)
@@ -83,7 +111,6 @@ export function MatchPredictionsTable({ date }: { date: string }) {
       betsByMatch.set(match.id, perMatch);
     }
 
-    // numeric: true keeps "Ai Bet 2" before "Ai Bet 10"
     const betColumns = [...cols.values()].sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { numeric: true }),
     );
@@ -104,6 +131,16 @@ export function MatchPredictionsTable({ date }: { date: string }) {
 
   return (
     <div className="stats-wrap">
+      <div className="toolbar">
+        <button disabled={saving} onClick={() => generate.mutate(date)}>
+          {generate.isPending ? "Generating…" : "Generate Ai bets"}
+        </button>
+        <button disabled={saving} onClick={() => deleteAuto.mutate(date)}>
+          {deleteAuto.isPending ? "Deleting…" : "Delete Ai bets"}
+        </button>
+        {saveFailed && <span className="error">Could not save the change. Try again.</span>}
+      </div>
+
       <table className="stats">
         <thead>
           <tr>
@@ -160,23 +197,62 @@ export function MatchPredictionsTable({ date }: { date: string }) {
                     {match.away}{t.away === "win" && " 🏆"}
                   </strong>
                 </td>
+
+                {/* Editable result ("Pending" clears it) */}
                 <td>
-                  {match.result
-                    ? <span className="badge result">{LABEL[match.result]}</span>
-                    : <span className="badge pending">Pending</span>}
+                  <select
+                    className={`badge edit ${match.result ? "result" : "pending"}`}
+                    value={match.result ?? ""}
+                    disabled={saving}
+                    onChange={(e) =>
+                      setResult.mutate({
+                        id: match.id,
+                        result: e.target.value === "" ? null : (e.target.value as Outcome),
+                      })
+                    }
+                  >
+                    <option value="">Pending</option>
+                    {OUTCOMES.map((o) => (
+                      <option key={o} value={o}>{LABEL[o]}</option>
+                    ))}
+                  </select>
                 </td>
+
+                {/* Editable predictions */}
                 {predictors.map((p) => {
                   const pick = picks.get(p);
-                  if (!pick) return <td key={p}><span className="muted">—</span></td>;
-                  const state = !match.result ? "open" : pick === match.result ? "hit" : "miss";
+                  const state = !pick
+                    ? "none"
+                    : !match.result ? "open"
+                    : pick === match.result ? "hit" : "miss";
                   return (
                     <td key={p}>
-                      <span className={`badge ${state}`}>
-                        {LABEL[pick]} {state === "hit" && "✓"}{state === "miss" && "✗"}
-                      </span>
+                      <select
+                        className={`badge edit ${state}`}
+                        value={pick ?? ""}
+                        disabled={saving}
+                        onChange={(e) =>
+                          setPrediction.mutate({
+                            matchId: match.id,
+                            predictorId: predictorIds.get(p)!,
+                            picked: e.target.value as Outcome,
+                          })
+                        }
+                      >
+                        {!pick && <option value="" disabled>—</option>}
+                        {OUTCOMES.map((o) => (
+                          <option key={o} value={o}>
+                            {LABEL[o]}
+                            {pick === o && state === "hit" ? " ✓" : ""}
+                            {pick === o && state === "miss" ? " ✗" : ""}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                   );
                 })}
+
+                {/* Position bets stay read-only (they are generated) */}
                 {betColumns.map((b, i) => {
                   const bet = betsByMatch.get(match.id)?.get(b.id);
                   const cls = i === 0 ? "bet-start" : undefined;

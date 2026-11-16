@@ -26,3 +26,19 @@
 .pct.none { background: #e5e7eb; color: #4b5563; }
 
 .stats .bet-start { border-left: 2px solid var(--border, #ccc); }
+
+
+.toolbar { display: flex; align-items: center; gap: .6rem; margin-bottom: .75rem; }
+
+.stats select.badge.edit {
+  appearance: none;
+  border: none;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+.stats select.badge.edit:disabled { opacity: .6; cursor: wait; }
+.stats select.badge.none { background: transparent; border: 1px dashed var(--border, #ccc); }

@@ -88,3 +88,16 @@ export const useMatchPredictions = (date: string) =>
     enabled: !!date,
   });
 }
+
+
+export function useDeleteAutoBets() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (date: string) =>
+      request<unknown>(`/positionbets/auto?date=${encodeURIComponent(date)}`, {
+        method: "DELETE",
+      }),
+    onSuccess: (_data, date) =>
+      qc.invalidateQueries({ queryKey: ["positionbets", date] }),
+  });
+}

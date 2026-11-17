@@ -232,3 +232,37 @@ export function useCreatePredictor() {
   });
 }
 
+
+// ---- Manual bets ----
+
+// Creates a manual bet column for a date. The API also creates a Pending cell for every
+// match of that date, so the column shows up as soon as positionbets is refetched.
+export function useCreatePositionBet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (b: { name: string; date: string }) =>
+      request<unknown>("/positionbets", { method: "POST", body: JSON.stringify(b) }),
+    onSuccess: (_data, { date }) => qc.invalidateQueries({ queryKey: ["positionbets", date] }),
+  });
+}
+
+// Sets the pick of a manual bet cell (PUT upsert). The body uses "picked" to match CreateMatchBetRequest.
+export function useSetMatchBet(date: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      matchId,
+      positionBetId,
+      picked,
+    }: {
+      matchId: string;
+      positionBetId: string;
+      picked: Outcome;
+    }) =>
+      request<MatchBet>(`/matchbets/${matchId}/${positionBetId}`, {
+        method: "PUT",
+        body: JSON.stringify({ picked }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["positionbets", date] }),
+  });
+}

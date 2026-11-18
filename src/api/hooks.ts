@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { request } from "./client";
+import { ApiError, request } from "./client";
 import type {
   DayStats,
   Match,
@@ -264,5 +264,31 @@ export function useSetMatchBet(date: string) {
         body: JSON.stringify({ picked }),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["positionbets", date] }),
+  });
+}
+
+// Creates the matches from an imported file, one request at a time so the file order is kept
+// (the table sorts by creation time). The API already adds an empty (Pending) prediction for
+// every predictor with each match, and answers 409 for a match that already exists.
+export function useImportMatches() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: async (items: NewMatch[]) => {
+      const result = { created: 0, duplicates: 0, failed: [] as string[] };
+      for (const m of items) {
+        try {
+          await request<Match>("/matches", { method: "POST", body: JSON.stringify(m) });
+          result.created++;
+        } catch (e) {
+          if (e instanceof ApiError && e.status === 409) result.duplicates++;
+          else
+            result.failed.push(
+              `${m.home} – ${m.away}: ${e instanceof Error ? e.message : "unknown error"}`,
+            );
+        }
+      }
+      return result;
+    },
+    onSuccess: invalidate,
   });
 }

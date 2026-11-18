@@ -6,13 +6,15 @@ import { MatchesByDate } from "../components/MatchesByDate";
 
 import { AddPredictorForm } from "../components/AddPredictorForm";
 
+import { ImportMatchesButton } from "../components/ImportMatchesButton";
+
 type Field = "home" | "away" | "date";
 const empty = { home: "", away: "", date: "" };
 
 export default function MatchesPage() {
   console.log('init');
-  const { data: matches = [], isLoading, error } = useMatches();
-  const sorted = [...matches].sort((a, b) => b.date.localeCompare(a.date));
+  // const { data: matches = [], isLoading, error } = useMatches();
+  // const sorted = [...matches].sort((a, b) => b.date.localeCompare(a.date));
   const create = useCreateMatch();
   const [form, setForm] = useState(empty);
 
@@ -57,13 +59,18 @@ export default function MatchesPage() {
         </form>
         {apiError && !hasFieldErrors && <p className="error">{apiError.message}</p>}
       </section>
+
+      <section>
+        <h2>Import matches</h2>
+        <ImportMatchesButton />
+    </section>
    
       <section>
         <h2>Add a predictor</h2>
         <AddPredictorForm />
       </section>
 
-      <section>
+      {/* <section>
         <h2>Matches</h2>
         {isLoading && <p className="muted">Loading matches…</p>}
         {error && <p className="error">Could not load matches. Is the API running?</p>}
@@ -82,7 +89,7 @@ export default function MatchesPage() {
             </tbody>
           </table>
         )}
-      </section>
+      </section> */}
       <section>
         <h2>Matches</h2>
         <MatchesByDate />

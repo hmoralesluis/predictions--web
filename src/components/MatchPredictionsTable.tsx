@@ -7,15 +7,20 @@ import {
   useGenerateBets,
   useMatchPredictions,
   usePositionBets,
+  useSetDayGender,
+  useSetDayPointsDiff,
   useSetDayTrust,
   useSetDayType,
   useSetMatchBet,
+  useSetMatchGender,
+  useSetMatchPointsDiff,
   useSetMatchResult,
   useSetMatchTrust,
   useSetMatchType,
   useSetPrediction,
 } from "../api/hooks";
 import type {
+  Gender,
   MatchBet,
   MatchDayType,
   MatchPrediction,
@@ -78,6 +83,9 @@ const TRUST_SHORT: Record<Trust, string> = {
   MuyAlta: "MA",
 };
 
+const GENDERS: Gender[] = ["M", "F"];
+const GENDER_LABEL: Record<Gender, string> = { M: "Male", F: "Female" };
+
 function teamStates(result: Outcome | null): { home: TeamState; away: TeamState } {
   switch (result) {
     case "HomeWin": return { home: "win", away: "lose" };
@@ -85,6 +93,41 @@ function teamStates(result: Outcome | null): { home: TeamState; away: TeamState 
     case "Draw":    return { home: "draw", away: "draw" };
     default:        return { home: "", away: "" };
   }
+}
+
+// Keeps the typed text locally and only sends the request on blur or Enter,
+// so we don't fire one request per keystroke.
+function PointsDiffInput({
+  value,
+  disabled,
+  onCommit,
+}: {
+  value: number;
+  disabled: boolean;
+  onCommit: (n: number) => void;
+}) {
+  const [text, setText] = useState(String(value));
+
+  function commit() {
+    const n = Number(text);
+    if (text.trim() === "" || !Number.isInteger(n)) {
+      setText(String(value)); // invalid: revert
+      return;
+    }
+    if (n !== value) onCommit(n);
+  }
+
+  return (
+    <input
+      type="number"
+      className="badge edit diff"
+      value={text}
+      disabled={disabled}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+    />
+  );
 }
 
 export function MatchPredictionsTable({ date }: { date: string }) {
@@ -97,17 +140,32 @@ export function MatchPredictionsTable({ date }: { date: string }) {
   const setDayType = useSetDayType();
   const setMatchTrust = useSetMatchTrust();
   const setDayTrust = useSetDayTrust();
+  const setMatchGender = useSetMatchGender();
+  const setDayGender = useSetDayGender();
+  const setMatchPointsDiff = useSetMatchPointsDiff();
+  const setDayPointsDiff = useSetDayPointsDiff();
   const generate = useGenerateBets();
   const deleteAuto = useDeleteAutoBets();
   const createBet = useCreatePositionBet();
   const setMatchBet = useSetMatchBet(date);
   const [betName, setBetName] = useState("");
+  const [dayDiff, setDayDiff] = useState("");
+
+  const dayDiffValid = dayDiff.trim() !== "" && Number.isInteger(Number(dayDiff));
 
   const createError = createBet.error instanceof ApiError ? createBet.error : null;
 
   function submitBet(e: FormEvent) {
     e.preventDefault();
     createBet.mutate({ name: betName.trim(), date }, { onSuccess: () => setBetName("") });
+  }
+
+  function submitDayDiff(e: FormEvent) {
+    e.preventDefault();
+    setDayPointsDiff.mutate(
+      { date, pointsDiff: Number(dayDiff) },
+      { onSuccess: () => setDayDiff("") },
+    );
   }
 
   const saving =
@@ -117,6 +175,10 @@ export function MatchPredictionsTable({ date }: { date: string }) {
     setDayType.isPending ||
     setMatchTrust.isPending ||
     setDayTrust.isPending ||
+    setMatchGender.isPending ||
+    setDayGender.isPending ||
+    setMatchPointsDiff.isPending ||
+    setDayPointsDiff.isPending ||
     generate.isPending ||
     deleteAuto.isPending ||
     createBet.isPending ||
@@ -128,6 +190,10 @@ export function MatchPredictionsTable({ date }: { date: string }) {
     setDayType.isError ||
     setMatchTrust.isError ||
     setDayTrust.isError ||
+    setMatchGender.isError ||
+    setDayGender.isError ||
+    setMatchPointsDiff.isError ||
+    setDayPointsDiff.isError ||
     generate.isError ||
     deleteAuto.isError ||
     setMatchBet.isError;
@@ -269,6 +335,33 @@ export function MatchPredictionsTable({ date }: { date: string }) {
           ))}
         </select>
 
+        <select
+          value=""
+          disabled={saving}
+          title="Set the gender of every match on this date"
+          onChange={(e) =>
+            setDayGender.mutate({ date, gender: e.target.value as Gender })
+          }
+        >
+          <option value="" disabled>Set all gender as…</option>
+          {GENDERS.map((g) => (
+            <option key={g} value={g}>{GENDER_LABEL[g]}</option>
+          ))}
+        </select>
+
+        <form className="inline-form" onSubmit={submitDayDiff}>
+          <input
+            type="number"
+            value={dayDiff}
+            onChange={(e) => setDayDiff(e.target.value)}
+            placeholder="Set all diff"
+            disabled={saving}
+          />
+          <button disabled={saving || !dayDiffValid}>
+            {setDayPointsDiff.isPending ? "Setting…" : "Set diff"}
+          </button>
+        </form>
+
         {saveFailed && <span className="error">Could not save the change. Try again.</span>}
         {createBet.isError && (
           <span className="error">{createError?.message ?? "Could not add the bet."}</span>
@@ -289,6 +382,8 @@ export function MatchPredictionsTable({ date }: { date: string }) {
             <th>Result</th>
             <th>Type</th>
             <th>Trust</th>
+            <th>Gender</th>
+            <th>Diff</th>
             {predictors.map((p) => {
               const value = pct(p);
               return (
@@ -395,6 +490,39 @@ export function MatchPredictionsTable({ date }: { date: string }) {
                   </select>
                 </td>
 
+                {/* Editable gender */}
+                <td>
+                  <select
+                    className="badge edit gender"
+                    title={GENDER_LABEL[match.gender]}
+                    value={match.gender}
+                    disabled={saving}
+                    onChange={(e) =>
+                      setMatchGender.mutate({
+                        id: match.id,
+                        gender: e.target.value as Gender,
+                      })
+                    }
+                  >
+                    {GENDERS.map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </td>
+
+                {/* Editable points difference (commits on blur / Enter).
+                    The key includes the value so the input resyncs after a refetch. */}
+                <td>
+                  <PointsDiffInput
+                    key={`${match.id}-${match.pointsDiff}`}
+                    value={match.pointsDiff}
+                    disabled={saving}
+                    onCommit={(n) =>
+                      setMatchPointsDiff.mutate({ id: match.id, pointsDiff: n })
+                    }
+                  />
+                </td>
+
                 {/* Editable predictions */}
                 {predictors.map((p) => {
                   const pick = picks.get(p);
@@ -486,7 +614,7 @@ export function MatchPredictionsTable({ date }: { date: string }) {
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={4}>Score</td>
+            <td colSpan={6}>Score</td>
             {predictors.map((p) => (
               <td key={p}>
                 {score[p].settled === 0

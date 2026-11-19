@@ -63,3 +63,5 @@
   padding: .15rem .4rem;
   text-align-last: center; /* centra el texto dentro del select */
 }
+
+.badge.edit.diff { width: 4rem; }

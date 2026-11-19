@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useDayStats, useMatches, useMatchStats, usePredictorStats } from "../api/hooks";
+import PredictorAcceptanceTable from "../components/PredictorAcceptanceTable";
 
 export default function StatsPage() {
   const [date, setDate] = useState("");
@@ -11,6 +12,8 @@ export default function StatsPage() {
 
   return (
     <>
+
+    <PredictorAcceptanceTable />
       <section>
         <h2>By predictor</h2>
         <pre>{JSON.stringify(predictors.data, null, 2)}</pre>

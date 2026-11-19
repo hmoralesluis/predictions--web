@@ -11,6 +11,8 @@ export type Trust =
   | "Alta"
   | "MuyAlta";
 
+export type Gender = "M" | "F";
+
 export interface Match {
   id: string;
   home: string;
@@ -19,6 +21,8 @@ export interface Match {
   result: Outcome | null;
   matchType: MatchDayType;
   matchTrust: Trust;
+  gender: Gender;
+  pointsDiff: number;
   createdAt: string;
 }
 
@@ -64,3 +68,11 @@ export type MatchWithBets = {
 };
 
 export type NewPredictor = { name: string };
+
+export interface PredictorAcceptance {
+  predictorId: string;
+  predictor: string;
+  correct: number;
+  total: number;
+  acceptancePercent: number;
+}

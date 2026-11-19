@@ -15,6 +15,8 @@ import type {
   PredictorStats,
   SetResultBody,
   Trust,
+  PredictorAcceptance,
+  Gender
 } from "./types";
 
 export const useMatches = () =>
@@ -290,5 +292,82 @@ export function useImportMatches() {
       return result;
     },
     onSuccess: invalidate,
+  });
+}
+
+// PUT /matches/{id}/gender
+export function useSetMatchGender() {
+  const refresh = useRefreshTable();
+  return useMutation({
+    mutationFn: ({ id, gender }: { id: string; gender: Gender }) =>
+      request<Match>(`/matches/${id}/gender`, {
+        method: "PUT",
+        body: JSON.stringify({ gender }),
+      }),
+    onSuccess: refresh,
+  });
+}
+
+// POST /matches/gender (every match on a date)
+export function useSetDayGender() {
+  const refresh = useRefreshTable();
+  return useMutation({
+    mutationFn: ({ date, gender }: { date: string; gender: Gender }) =>
+      request<boolean>("/matches/gender", {
+        method: "POST",
+        body: JSON.stringify({ date, gender }),
+      }),
+    onSuccess: refresh,
+  });
+}
+
+// PUT /matches/{id}/pointsdiff
+export function useSetMatchPointsDiff() {
+  const refresh = useRefreshTable();
+  return useMutation({
+    mutationFn: ({ id, pointsDiff }: { id: string; pointsDiff: number }) =>
+      request<Match>(`/matches/${id}/pointsdiff`, {
+        method: "PUT",
+        body: JSON.stringify({ pointsDiff }),
+      }),
+    onSuccess: refresh,
+  });
+}
+
+// POST /matches/pointsdiff (every match on a date)
+export function useSetDayPointsDiff() {
+  const refresh = useRefreshTable();
+  return useMutation({
+    mutationFn: ({ date, pointsDiff }: { date: string; pointsDiff: number }) =>
+      request<boolean>("/matches/pointsdiff", {
+        method: "POST",
+        body: JSON.stringify({ date, pointsDiff }),
+      }),
+    onSuccess: refresh,
+  });
+}
+
+export function usePredictorAcceptance(
+  gender?: Gender,
+  matchType?: MatchDayType
+) {
+  const params = new URLSearchParams();
+
+  if (gender) {
+    params.append("gender", gender);
+  }
+
+  if (matchType) {
+    params.append("matchType", matchType);
+  }
+
+  return useQuery({
+    queryKey: ["predictors", "acceptance", gender, matchType],
+    queryFn: () =>
+      request<PredictorAcceptance[]>(
+        `/predictors/acceptance${
+          params.toString() ? `?${params.toString()}` : ""
+        }`
+      ),
   });
 }
